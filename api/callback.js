@@ -1,3 +1,6 @@
+if (process.env.NODE_ENV === 'production') {
+  return res.status(404).end();
+}
 export default async function handler(req, res) {
   const { code } = req.query;
 
