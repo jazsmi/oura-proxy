@@ -348,6 +348,92 @@
     }
     .phase-title.glowing { animation: glow-pulse 3s ease-in-out infinite; }
 
+    /* PIN screen */
+    .pin-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 40px 20px;
+    }
+    .pin-overlay.hidden { display: none; }
+
+    .pin-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 300;
+      color: var(--cream);
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+    .pin-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--lavender);
+      margin-bottom: 48px;
+    }
+    .pin-prompt {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--lavender);
+      margin-bottom: 20px;
+    }
+    .pin-input {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px 24px;
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.3em;
+      text-align: center;
+      outline: none;
+      width: 200px;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+    .pin-input:focus { border-color: rgba(139,107,174,0.5); }
+    .pin-input.shake {
+      animation: shake 0.4s ease;
+      border-color: var(--phase-menstrual);
+    }
+    .pin-error {
+      font-size: 11px;
+      color: var(--rose);
+      letter-spacing: 0.06em;
+      min-height: 16px;
+      margin-bottom: 20px;
+    }
+    .pin-submit {
+      background: var(--surface2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: var(--cream-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pin-submit:hover { border-color: rgba(139,107,174,0.4); color: var(--cream); }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+
     @media (max-width: 480px) {
       .phase-grid { grid-template-columns: repeat(2, 1fr); }
       .phase-display .phase-title { font-size: 36px; }
@@ -356,6 +442,23 @@
   </style>
 </head>
 <body>
+
+  <!-- PIN screen -->
+  <div class="pin-overlay" id="pin-overlay">
+    <p class="pin-logo">Cycle Syncing Coach</p>
+    <p class="pin-eyebrow">@holistichottiejaz</p>
+    <p class="pin-prompt">Enter your access code</p>
+    <input
+      class="pin-input"
+      id="pin-input"
+      type="password"
+      maxlength="6"
+      autocomplete="off"
+      autofocus
+    />
+    <p class="pin-error" id="pin-error"></p>
+    <button class="pin-submit" onclick="checkPin()">Unlock</button>
+  </div>
 
   <header>
     <p class="eyebrow">@holistichottiejaz</p>
@@ -444,7 +547,7 @@
 
   <script>
     const PROXY = 'https://oura-proxy-omega.vercel.app/api/oura';
-    const ANTHROPIC_API = '/api/claude';
+    const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
 
     let currentPhase = null;
     let readinessScore = null;
@@ -693,6 +796,29 @@ Keep it under 350 words. Warm, direct, real.`;
 
     document.getElementById('followup-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') sendFollowUp();
+    });
+
+    // PIN
+    const CORRECT_PIN = 'GYLTBG';
+
+    function checkPin() {
+      const input = document.getElementById('pin-input');
+      const errorEl = document.getElementById('pin-error');
+      const val = input.value.trim().toUpperCase();
+
+      if (val === CORRECT_PIN) {
+        document.getElementById('pin-overlay').classList.add('hidden');
+        fetchOuraData();
+      } else {
+        errorEl.textContent = 'Incorrect code — try again';
+        input.classList.add('shake');
+        input.value = '';
+        setTimeout(() => input.classList.remove('shake'), 400);
+      }
+    }
+
+    document.getElementById('pin-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkPin();
     });
 
     fetchOuraData();
