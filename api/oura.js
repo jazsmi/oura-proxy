@@ -1,16 +1,16 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  const { endpoint, start_date, end_date } = req.query;
-  const token = req.headers['authorization']?.replace('Bearer ', '');
+  const token = process.env.OURA_TOKEN;
+  if (!token) return res.status(500).json({ error: 'OURA_TOKEN not configured on server' });
 
-  if (!token) return res.status(401).json({ error: 'Missing token' });
+  const { endpoint, start_date, end_date } = req.query;
   if (!endpoint) return res.status(400).json({ error: 'Missing endpoint' });
 
   const allowed = ['daily_cycle_phases', 'daily_readiness', 'daily_sleep'];
