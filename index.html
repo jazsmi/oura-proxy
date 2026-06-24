@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cycle Syncing Coach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1E0A2E;
+      --surface: #2A1040;
+      --surface2: #341550;
+      --cream: #F5EDE0;
+      --cream-muted: #C8B8A8;
+      --gold: #C9A84C;
+      --lavender: #7B6B8D;
+      --rose: #E8A0A0;
+
+      --phase-menstrual: #C94040;
+      --phase-follicular: #5A9E6F;
+      --phase-ovulatory: #C9A84C;
+      --phase-luteal: #8B6BAE;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px 20px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    header .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--lavender);
+      margin-bottom: 8px;
+    }
+
+    header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      color: var(--cream);
+      letter-spacing: 0.04em;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 560px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* Phase Picker */
+    .phase-label {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--lavender);
+      margin-bottom: 12px;
+    }
+
+    .phase-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .phase-btn {
+      background: var(--surface2);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 12px 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+      color: var(--cream-muted);
+    }
+
+    .phase-btn:hover {
+      border-color: rgba(255,255,255,0.2);
+      color: var(--cream);
+    }
+
+    .phase-btn.active {
+      color: var(--cream);
+    }
+
+    .phase-btn.active[data-phase="menstrual"] { background: rgba(201,64,64,0.15); border-color: var(--phase-menstrual); }
+    .phase-btn.active[data-phase="follicular"] { background: rgba(90,158,111,0.15); border-color: var(--phase-follicular); }
+    .phase-btn.active[data-phase="ovulatory"]  { background: rgba(201,168,76,0.15); border-color: var(--phase-ovulatory); }
+    .phase-btn.active[data-phase="luteal"]     { background: rgba(139,107,174,0.15); border-color: var(--phase-luteal); }
+
+    .phase-btn .phase-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+    .phase-btn .phase-name { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; display: block; }
+
+    /* Scores strip */
+    .scores {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .score-box {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .score-box .score-label {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--lavender);
+      margin-bottom: 6px;
+    }
+
+    .score-box .score-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 300;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .score-box .score-value.loading {
+      font-size: 18px;
+      color: var(--lavender);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+    }
+
+    .score-box .score-value.error {
+      font-size: 14px;
+      color: var(--rose);
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .score-box .score-sub {
+      font-size: 10px;
+      color: var(--lavender);
+      margin-top: 4px;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.07);
+      margin-bottom: 24px;
+    }
+
+    /* Phase display */
+    .phase-display {
+      text-align: center;
+      margin-bottom: 24px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .phase-display .phase-eyebrow {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--lavender);
+      margin-bottom: 8px;
+    }
+
+    .phase-display .phase-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 48px;
+      font-weight: 300;
+      font-style: italic;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      transition: color 0.4s ease;
+    }
+
+    .phase-display .phase-title.menstrual { color: var(--phase-menstrual); }
+    .phase-display .phase-title.follicular { color: var(--phase-follicular); }
+    .phase-display .phase-title.ovulatory  { color: var(--phase-ovulatory); }
+    .phase-display .phase-title.luteal     { color: var(--phase-luteal); }
+
+    .phase-display .phase-subtitle {
+      font-size: 11px;
+      color: var(--lavender);
+      margin-top: 6px;
+      letter-spacing: 0.06em;
+    }
+
+    /* Recs */
+    .recs { display: none; }
+    .recs.visible { display: block; }
+
+    .rec-section {
+      margin-bottom: 20px;
+    }
+
+    .rec-section-header {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--lavender);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rec-section-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .rec-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .rec-list li {
+      font-size: 13px;
+      color: var(--cream-muted);
+      line-height: 1.5;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .rec-list li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: var(--lavender);
+      font-size: 10px;
+      top: 2px;
+    }
+
+    .content-mode {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .content-mode .mode-tag {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .content-mode .mode-tag.menstrual { color: var(--phase-menstrual); }
+    .content-mode .mode-tag.follicular { color: var(--phase-follicular); }
+    .content-mode .mode-tag.ovulatory  { color: var(--phase-ovulatory); }
+    .content-mode .mode-tag.luteal     { color: var(--phase-luteal); }
+
+    .content-mode .mode-desc {
+      font-size: 12px;
+      color: var(--cream-muted);
+      line-height: 1.5;
+    }
+
+    /* Low readiness alert */
+    .readiness-alert {
+      background: rgba(201,64,64,0.1);
+      border: 1px solid rgba(201,64,64,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--rose);
+      line-height: 1.5;
+      display: none;
+    }
+
+    .readiness-alert.visible { display: block; }
+
+    /* Refresh button */
+    .refresh-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: var(--lavender);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+
+    .refresh-btn:hover {
+      border-color: rgba(255,255,255,0.25);
+      color: var(--cream);
+    }
+
+    .scores-row-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .last-updated {
+      font-size: 10px;
+      color: var(--lavender);
+    }
+
+    @media (max-width: 480px) {
+      .phase-grid { grid-template-columns: repeat(2, 1fr); }
+      .phase-display .phase-title { font-size: 36px; }
+      .score-box .score-value { font-size: 34px; }
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { text-shadow: 0 0 20px currentColor; opacity: 1; }
+      50% { text-shadow: 0 0 40px currentColor; opacity: 0.85; }
+    }
+
+    .phase-title.active-glow {
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <p class="eyebrow">@holistichottiejaz</p>
+    <h1>Cycle Syncing Coach</h1>
+  </header>
+
+  <div class="card">
+
+    <!-- Phase Picker -->
+    <p class="phase-label">Your phase today</p>
+    <div class="phase-grid">
+      <button class="phase-btn" data-phase="menstrual">
+        <span class="phase-icon">🔴</span>
+        <span class="phase-name">Menstrual</span>
+      </button>
+      <button class="phase-btn" data-phase="follicular">
+        <span class="phase-icon">🌱</span>
+        <span class="phase-name">Follicular</span>
+      </button>
+      <button class="phase-btn" data-phase="ovulatory">
+        <span class="phase-icon">✨</span>
+        <span class="phase-name">Ovulatory</span>
+      </button>
+      <button class="phase-btn" data-phase="luteal">
+        <span class="phase-icon">🌙</span>
+        <span class="phase-name">Luteal</span>
+      </button>
+    </div>
+
+    <!-- Scores -->
+    <div class="scores">
+      <div class="score-box">
+        <div class="score-label">Readiness</div>
+        <div class="score-value loading" id="readiness-score">—</div>
+        <div class="score-sub" id="readiness-date"></div>
+      </div>
+      <div class="score-box">
+        <div class="score-label">Sleep</div>
+        <div class="score-value loading" id="sleep-score">—</div>
+        <div class="score-sub" id="sleep-date"></div>
+      </div>
+    </div>
+
+    <div class="scores-row-footer">
+      <span class="last-updated" id="last-updated">Fetching your data...</span>
+      <button class="refresh-btn" onclick="fetchOuraData()">↻ Refresh</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Phase Display -->
+    <div class="phase-display">
+      <p class="phase-eyebrow">You are in</p>
+      <p class="phase-title" id="phase-title">—</p>
+      <p class="phase-subtitle" id="phase-subtitle">Select your phase above</p>
+    </div>
+
+    <!-- Low Readiness Alert -->
+    <div class="readiness-alert" id="readiness-alert"></div>
+
+    <!-- Recommendations -->
+    <div class="recs" id="recs">
+
+      <div class="rec-section">
+        <div class="rec-section-header">🥗 What to eat</div>
+        <ul class="rec-list" id="food-recs"></ul>
+      </div>
+
+      <div class="rec-section">
+        <div class="rec-section-header">🏃 How to move</div>
+        <ul class="rec-list" id="movement-recs"></ul>
+      </div>
+
+      <div class="rec-section">
+        <div class="rec-section-header">⚡ Energy + rest</div>
+        <ul class="rec-list" id="energy-recs"></ul>
+      </div>
+
+      <div class="rec-section">
+        <div class="rec-section-header">📲 Content mode</div>
+        <div class="content-mode" id="content-mode">
+          <div class="mode-tag" id="content-mode-tag"></div>
+          <div class="mode-desc" id="content-mode-desc"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const PROXY = 'https://oura-proxy-omega.vercel.app/api/oura';
+
+    const PHASES = {
+      menstrual: {
+        title: 'Menstrual',
+        subtitle: 'Days 1–5 · Rest & nourish',
+        food: [
+          'Iron-rich foods — dark leafy greens, legumes, grass-fed red meat',
+          'Anti-inflammatory foods — fatty fish, ginger, turmeric, berries',
+          'Warming foods — soups, stews, broths, cooked root vegetables',
+          'Magnesium-rich foods — dark chocolate, nuts, seeds',
+          'Avoid: cold raw foods, excess caffeine, alcohol, highly processed foods',
+        ],
+        movement: [
+          'Gentle and restorative only — walking, yin yoga, stretching, light pilates',
+          'No high-intensity, no heavy lifting',
+          'Rest IS training during this phase',
+        ],
+        energy: [
+          'Lowest capacity of the cycle — honor it, don\'t override it',
+          'Protect solo time and stillness; minimize social obligations',
+          'Good time for reflection, journaling, releasing what\'s not working',
+        ],
+        contentMode: 'Planning & Reflection — not filming',
+        contentDesc: 'Review content ideas, journal for future posts, map out upcoming themes. If you do create: reflective carousels or soft voiceover Reels about rest, cycle awareness, or slowness. Brand pillars: stillness, cycle health, sovereignty.',
+      },
+      follicular: {
+        title: 'Follicular',
+        subtitle: 'Days 6–13 · Rising energy',
+        food: [
+          'Light, fresh foods — sprouts, salads, fermented foods, fresh herbs',
+          'Estrogen-supporting foods — flaxseed, cruciferous vegetables, legumes',
+          'Probiotic-rich foods — yogurt, kefir, kimchi, sauerkraut',
+          'Fresh fruits and raw vegetables are well-tolerated right now',
+          'Lean proteins — eggs, fish, chicken, tempeh',
+        ],
+        movement: [
+          'Great phase for trying new workouts and increasing intensity',
+          'Strength training, HIIT, cycling, dance — anything that feels exciting',
+          'Energy is building — use it without burning it all at once',
+        ],
+        energy: [
+          'Clarity, motivation, and creativity are rising — lean in',
+          'Best time to start new projects, have hard conversations, make decisions',
+          'Social energy rising — good for planning events, collaborations, calls',
+        ],
+        contentMode: 'Filming — primary production window',
+        contentDesc: 'High energy = natural on camera. Batch film as much as possible here — it funds your luteal and menstrual phases. Talking-head Reels, day-in-the-life, garden check-ins. Brand pillars: sovereignty, kitchen gardening, holistic wellness.',
+      },
+      ovulatory: {
+        title: 'Ovulatory',
+        subtitle: 'Days 14–16 · Peak energy',
+        food: [
+          'Anti-inflammatory, liver-supporting foods — leafy greens, cruciferous veg, beets',
+          'Light proteins — fish, eggs, legumes',
+          'Zinc-rich foods — pumpkin seeds, chickpeas, cashews',
+          'Fresh fruits, raw salads, smoothies well-tolerated',
+          'Avoid excess sugar and alcohol — estrogen peaks here, liver load matters',
+        ],
+        movement: [
+          'Peak performance window — max intensity if you want it',
+          'Group classes, runs, heavy lifts, anything social or competitive',
+          'Body is most resilient to stress right now',
+        ],
+        energy: [
+          'Highest social energy of the cycle — ideal for launches, events, visibility',
+          'Dinner parties this week = natural hosting peak',
+          'This phase is short (2–3 days) — don\'t overcommit',
+        ],
+        contentMode: 'Filming & Posting — peak visibility window',
+        contentDesc: 'This is when you\'re most magnetic on camera. Film your most important content here. Launch new series, go Live, post what you want maximum reach on. Engagement energy is highest — show up in Stories. Brand pillars: confidence, cycle health, nourishment.',
+      },
+      luteal: {
+        title: 'Luteal',
+        subtitle: 'Days 17–28 · Inward & editing',
+        food: [
+          'Complex carbohydrates — sweet potato, brown rice, oats, squash',
+          'Progesterone-supporting foods — vitamin B6 foods (bananas, chicken, salmon), zinc',
+          'Magnesium-rich foods — dark leafy greens, nuts, seeds, dark chocolate',
+          'Calcium-rich foods — dairy or fortified plant milk, sardines, leafy greens',
+          'Avoid: excess caffeine, salt (bloating), refined sugar spikes',
+        ],
+        movement: [
+          'Early luteal: moderate intensity still works — strength training, yoga',
+          'Late luteal (days 25–28): shift to lower intensity — walks, stretching, pilates',
+          'PMS symptoms are data, not weakness — listen and adjust',
+        ],
+        energy: [
+          'Cognitive focus is high early — great for detail work, editing, systems',
+          'Social energy declines — protect it, cancel low-value obligations guilt-free',
+          'Nesting instinct is real — lean into home, cooking, slowness',
+        ],
+        contentMode: 'Editing — detail and systems mode',
+        contentDesc: 'Edit filmed content, write captions, schedule posts. Not ideal for new filming (especially late luteal). Great for writing carousels, drafting captions for the bank, planning next cycle\'s content. Brand pillars: slow living, home life, emotional processing.',
+      },
+    };
+
+    let currentPhase = null;
+    let readinessScore = null;
+
+    function getDateRange(daysBack) {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - daysBack);
+      const fmt = d => d.toISOString().split('T')[0];
+      return { start: fmt(start), end: fmt(end) };
+    }
+
+    async function fetchOuraData() {
+      document.getElementById('last-updated').textContent = 'Fetching your data...';
+      document.getElementById('readiness-score').className = 'score-value loading';
+      document.getElementById('readiness-score').textContent = '…';
+      document.getElementById('sleep-score').className = 'score-value loading';
+      document.getElementById('sleep-score').textContent = '…';
+
+      const r7 = getDateRange(7);
+      const r3 = getDateRange(3);
+
+      const [readinessRes, sleepRes] = await Promise.allSettled([
+        fetch(`${PROXY}?endpoint=daily_readiness&start_date=${r7.start}&end_date=${r7.end}`).then(r => r.json()),
+        fetch(`${PROXY}?endpoint=daily_sleep&start_date=${r3.start}&end_date=${r3.end}`).then(r => r.json()),
+      ]);
+
+      // Readiness
+      const readinessEl = document.getElementById('readiness-score');
+      const readinessDateEl = document.getElementById('readiness-date');
+      if (readinessRes.status === 'fulfilled' && readinessRes.value?.data?.length) {
+        const latest = readinessRes.value.data.at(-1);
+        readinessScore = latest.score;
+        readinessEl.className = 'score-value';
+        readinessEl.textContent = readinessScore;
+        readinessDateEl.textContent = latest.day;
+      } else {
+        readinessScore = null;
+        readinessEl.className = 'score-value error';
+        readinessEl.textContent = 'unavailable';
+        readinessDateEl.textContent = '';
+      }
+
+      // Sleep
+      const sleepEl = document.getElementById('sleep-score');
+      const sleepDateEl = document.getElementById('sleep-date');
+      if (sleepRes.status === 'fulfilled' && sleepRes.value?.data?.length) {
+        const latest = sleepRes.value.data.at(-1);
+        sleepEl.className = 'score-value';
+        sleepEl.textContent = latest.score;
+        sleepDateEl.textContent = latest.day;
+      } else {
+        sleepEl.className = 'score-value error';
+        sleepEl.textContent = 'unavailable';
+        sleepDateEl.textContent = '';
+      }
+
+      const now = new Date();
+      document.getElementById('last-updated').textContent =
+        `Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+      // Re-render recs if phase already selected
+      if (currentPhase) renderRecs(currentPhase);
+    }
+
+    function renderRecs(phase) {
+      const data = PHASES[phase];
+      if (!data) return;
+
+      // Phase display
+      const titleEl = document.getElementById('phase-title');
+      titleEl.textContent = data.title;
+      titleEl.className = `phase-title active-glow ${phase}`;
+      document.getElementById('phase-subtitle').textContent = data.subtitle;
+
+      // Low readiness alert
+      const alertEl = document.getElementById('readiness-alert');
+      if (readinessScore !== null && readinessScore < 65) {
+        alertEl.textContent = `Your readiness is at ${readinessScore} today — your body's asking for something gentler regardless of where you are in your cycle. Dial back intensity and prioritize rest.`;
+        alertEl.classList.add('visible');
+      } else {
+        alertEl.classList.remove('visible');
+      }
+
+      // Food
+      const foodEl = document.getElementById('food-recs');
+      foodEl.innerHTML = data.food.map(f => `<li>${f}</li>`).join('');
+
+      // Movement — soften if readiness is low
+      const movementEl = document.getElementById('movement-recs');
+      let movement = data.movement;
+      if (readinessScore !== null && readinessScore < 65 && phase !== 'menstrual') {
+        movement = ['Your readiness is low — treat today like a menstrual phase day', 'Walking, gentle stretching, or full rest only', 'Come back to your regular phase movement when scores recover'];
+      }
+      movementEl.innerHTML = movement.map(m => `<li>${m}</li>`).join('');
+
+      // Energy
+      const energyEl = document.getElementById('energy-recs');
+      energyEl.innerHTML = data.energy.map(e => `<li>${e}</li>`).join('');
+
+      // Content
+      const modeTagEl = document.getElementById('content-mode-tag');
+      const modeDescEl = document.getElementById('content-mode-desc');
+      modeTagEl.textContent = data.contentMode;
+      modeTagEl.className = `mode-tag ${phase}`;
+      modeDescEl.textContent = data.contentDesc;
+
+      document.getElementById('recs').classList.add('visible');
+    }
+
+    // Phase button clicks
+    document.querySelectorAll('.phase-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPhase = btn.dataset.phase;
+        renderRecs(currentPhase);
+      });
+    });
+
+    // Init
+    fetchOuraData();
+  </script>
+</body>
+</html>
